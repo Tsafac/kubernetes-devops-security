@@ -30,7 +30,7 @@ pipeline {
             steps {
               withKubeConfig([credentialsId: 'config']){
                   sh "sed -i 's#replace#siddharth67/numeric-app:${GIT_COMMIT}#g' k8s_deployment_service.yaml"
-                  sh "sudo nano k8s_deployment_service.yaml"
+                  sh "sudo kubectl apply -f k8s_deployment_service.yaml"
             }
             }
         }     
