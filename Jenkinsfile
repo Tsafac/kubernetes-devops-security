@@ -26,11 +26,12 @@ pipeline {
                sh 'docker build -t leberi/numeric-app:""$GIT_COMMIT"" .'
             }
         } 
-      stage('Docker Build and Push') {
+      stage('Kubernetes Deplyment - DEV') {
             steps {
-              withKubeConfig([credentialsId: 'config'])
+              withKubeConfig([credentialsId: 'config']){
                   sh "sed -i 's#replace#siddharth67/numeric-app:${GIT_COMMIT}#g' k8s_deployment_service.yaml"
                   sh "kubectl apply -f k8s_deployment_service.yaml"
+            }
             }
         }     
     }
