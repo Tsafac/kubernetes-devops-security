@@ -1,51 +1,28 @@
 pipeline {
     agent any
 
+    environment {
+        // Récupère le token stocké dans Jenkins
+        SONAR_TOKEN = credentials('sonar-token')  // Remplace 'sonar-token' par l'ID du credential créé dans Jenkins
+    }
+
     stages {
-        stage('Build Artifact') {
+        stage('Checkout') {
             steps {
-                sh "mvn clean package -DskipTests=true"
-                archive 'target/*.jar'  // so that they can be downloaded later
+                checkout scm
             }
         }
-
-        stage('Unit Tests') {
-            steps {
-                sh "mvn test"
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                    jacoco execPattern: 'target/jacoco.exec'
-                }
-            }
-        }
-
-        stage('Docker Build.') {
-            steps {
-                sh 'printenv'
-                sh 'sudo docker build -t leberi/numeric-app:"$GIT_COMMIT" .'
-            }
-        }
-
-        stage('Kubernetes Deployment - DEV') {
-            steps {
-                withKubeConfig([credentialsId: 'config']) {
-                    sh "sed -i 's#replace#siddharth67/numeric-app:${GIT_COMMIT}#g' k8s_deployment_service.yaml"
-                    sh "sudo kubectl apply -f k8s_deployment_service.yaml"
-                }
-            }
-        }
-
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def mvn = tool 'Maven'
-                    withSonarQubeEnv() {
-                        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application"
+                    def mvn = tool 'Maven' // Assure-toi que tu as bien configuré l'outil Maven dans Jenkins
+                    withSonarQubeEnv('SonarQube') {
+                        // Passe le token dans la commande Maven
+                        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application -Dsonar.login=${SONAR_TOKEN}"
                     }
                 }
             }
         }
     }
 }
+
