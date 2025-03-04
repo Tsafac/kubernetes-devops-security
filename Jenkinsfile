@@ -1,24 +1,61 @@
 pipeline {
     agent any
 
-    environment {
-        // Récupère le token stocké dans Jenkins
-        SONAR_TOKEN = credentials('sonar-token')  // Remplace 'sonar-token' par l'ID du credential créé dans Jenkins
+    tools {
+        maven 'Maven'  // Assure-toi que 'Default Maven' est configuré dans Jenkins
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build Artifact') {
+            steps {
+                sh "mvn clean package -DskipTests=true"
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh "mvn test"
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                    jacoco execPattern: 'target/jacoco.exec'
+                }
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                sh 'printenv'
+                sh 'sudo docker build -t leberi/numeric-app:"$GIT_COMMIT" .'
+            }
+        }
+
+        stage('Kubernetes Deployment - DEV') {
+            steps {
+                withKubeConfig([credentialsId: 'config']) {
+                    sh "sed -i 's#replace#siddharth67/numeric-app:${GIT_COMMIT}#g' k8s_deployment_service.yaml"
+                    sh "sudo kubectl apply -f k8s_deployment_service.yaml"
+                }
+            }
+        }
+
+        stage('SCM') {
             steps {
                 checkout scm
             }
         }
+
         stage('SonarQube Analysis') {
+            environment {
+                SONAR_TOKEN = credentials('sonar-token')  // Récupère le token SonarQube depuis Jenkins
+            }
             steps {
                 script {
-                    def mvn = tool 'Maven' // Assure-toi que tu as bien configuré l'outil Maven dans Jenkins
-                    withSonarQubeEnv('SonarQube') {
-                        // Passe le token dans la commande Maven
-                        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application -Dsonar.login=${SONAR_TOKEN}"
+                    def mvnHome = tool name: 'Default Maven'
+                    withSonarQubeEnv('SonarQube') {  // Mets le nom de ton serveur SonarQube configuré dans Jenkins
+                        sh "${mvnHome}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application -Dsonar.login=${SONAR_TOKEN}"
                     }
                 }
             }
