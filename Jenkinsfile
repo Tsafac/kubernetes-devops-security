@@ -21,7 +21,7 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build.') {
             steps {
                 sh 'printenv'
                 sh 'sudo docker build -t leberi/numeric-app:"$GIT_COMMIT" .'
