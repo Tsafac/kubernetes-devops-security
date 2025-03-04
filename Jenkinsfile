@@ -1,10 +1,5 @@
 pipeline {
     agent any
-
-    tools {
-        maven 'Maven'  // Assure-toi que 'Default Maven' est configuré dans Jenkins
-    }
-
     stages {
         stage('Build Artifact') {
             steps {
@@ -53,7 +48,7 @@ pipeline {
             }
             steps {
                 script {
-                    def mvnHome = tool name: 'Default Maven'
+                    def mvnHome = tool name: 'Maven'
                     withSonarQubeEnv('SonarQube') {  // Mets le nom de ton serveur SonarQube configuré dans Jenkins
                         sh "${mvnHome}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application -Dsonar.login=${SONAR_TOKEN}"
                     }
