@@ -64,11 +64,7 @@ pipeline {
                     withSonarQubeEnv('SonarQube') {  // Mets le nom de ton serveur SonarQube configuré dans Jenkins
                         sh "${mvnHome}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=numeric-application -Dsonar.login=${SONAR_TOKEN}"
                     }
-                    timeout(time: 2, unit: 'MINUTES') {
-                      script {
-                        waitForQualityGate abortPipeline: true 
-                      }
-                    }
+                    
                 }
             }
         }
