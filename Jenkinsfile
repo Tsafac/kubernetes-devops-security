@@ -20,12 +20,24 @@ pipeline {
             }
         }
 
+        stage('Vulnerability Scan -Docker') {
+            steps {
+                sh 'mvn dependency-check:check'
+             }
+             post {
+                always{
+                    dependencyCheckPublisher pattern: 'target/dependency-check'
+                }
+             }
+        }
+
         stage('Docker Build and Push') {
             steps {
                 sh 'printenv'
                 sh 'sudo docker build -t leberi/numeric-app:"$GIT_COMMIT" .'
             }
         }
+
 
         stage('Kubernetes Deployment - DEV') {
             steps {
